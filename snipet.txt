@@ -1,0 +1,92 @@
+import os
+import requests
+from typing import Dict, Any, List, Optional
+
+def google_search(query: str, num_results: int = 5) -> Dict[str, Any]:
+    """
+    Performs a web search using Google Custom Search JSON API.
+
+    Args:
+        query (str): The search query string.
+        num_results (int): Number of results to return (default: 5, max: 10 per request).
+
+    Returns:
+        dict: Containing 'status', 'query', and list of search result dicts with title, snippet, and link.
+    """
+    api_key = os.getenv("GOOGLE_SEARCH_API_KEY")
+    search_engine_id = os.getenv("GOOGLE_SEARCH_CX")
+
+    if not api_key or not search_engine_id:
+        return {
+            "status": "error",
+            "message": "Missing GOOGLE_SEARCH_API_KEY or GOOGLE_SEARCH_CX environment variables."
+        }
+
+    url = "https://www.googleapis.com/customsearch/v1"
+    params = {
+        "key": api_key,
+        "cx": search_engine_id,
+        "q": query,
+        "num": min(max(1, num_results), 10)  # Clamp between 1 and 10
+    }
+
+    try:
+        response = requests.get(url, params=params, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+
+        results: List[Dict[str, str]] = []
+        items = data.get("items", [])
+
+        for item in items:
+            results.append({
+                "title": item.get("title"),
+                "snippet": item.get("snippet"),
+                "link": item.get("link")
+            })
+
+        return {
+            "status": "success",
+            "query": query,
+            "count": len(results),
+            "results": results
+        }
+
+    except requests.exceptions.RequestException as e:
+        return {
+            "status": "error",
+            "message": str(e)
+        }
+
+
+---->Function Calling Tool Definition Schema (OpenAI / Gemini Format)
+{
+  "name": "google_search",
+  "description": "Searches the web using Google Search to fetch up-to-date information, news, or articles.",
+  "parameters": {
+    "type": "OBJECT",
+    "properties": {
+      "query": {
+        "type": "STRING",
+        "description": "The search query string."
+      },
+      "num_results": {
+        "type": "INTEGER",
+        "description": "Number of top results to return (default is 5, max is 10)."
+      }
+    },
+    "required": ["query"]
+  }
+}
+
+--->Example Usage
+# Set your API credentials
+os.environ["GOOGLE_SEARCH_API_KEY"] = "YOUR_GOOGLE_API_KEY"
+os.environ["GOOGLE_SEARCH_CX"] = "YOUR_SEARCH_ENGINE_CX"
+
+# Run search
+output = google_search("Google Agent Development Kit", num_results=3)
+
+# Print output
+import json
+print(json.dumps(output, indent=2))

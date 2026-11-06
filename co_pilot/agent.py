@@ -1,4 +1,6 @@
 from google.adk.agents.llm_agent import Agent
+from google.ak.tools import google_search
+from google.adk.runner import InMemoryAgentRunner
 import datetime as dt
 
 
@@ -13,10 +15,18 @@ def get_current_time(city: str) -> dict:
     }
 
 
+# define the root agent with the tool
 root_agent = Agent(
     model="gemini-3.6-flash",
-    name="root_agent",
+    name="my_assistante",
     description="A helpful assistant for user questions.",
     instruction="Answer user questions to the best of your knowledge",
-    tools=[get_current_time],
+    tools=[get_current_time, google_search],
+)
+print("Root agent created successfully.")
+
+runner = InMemoryAgentRunner(agent=root_agent)
+print("Runner created successfully.")
+response = await runner.run_debug(
+    "What is Agent Developement Kit fropm Google? what languages is SDK available in?"
 )
